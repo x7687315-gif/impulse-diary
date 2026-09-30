@@ -31,6 +31,7 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
   const goals = useLiveQuery(() => db.goals.toArray())
   const openForm = useUI((s) => s.openForm)
   const setPage = useUI((s) => s.setPage)
+  const openAdjust = useUI((s) => s.openAdjust)
 
   if (!entries || !adjs || !goals) return null
 
@@ -64,9 +65,14 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
       </>
     )
     foot = (
-      <button className="btn small" onClick={() => openForm(null)}>
-        再记一笔
-      </button>
+      <>
+        <button className="btn small" onClick={() => openForm(null)}>
+          再记一笔
+        </button>
+        <button className="btn small" onClick={() => openAdjust('SAVED')}>
+          手动调整…
+        </button>
+      </>
     )
   } else if (index === 1) {
     title = '即将支出'
@@ -96,9 +102,14 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
       </>
     )
     foot = (
-      <button className="btn small" onClick={() => openForm(null)}>
-        记一笔已计划
-      </button>
+      <>
+        <button className="btn small" onClick={() => openForm(null)}>
+          记一笔已计划
+        </button>
+        <button className="btn small" onClick={() => openAdjust('PLANNED')}>
+          手动调整…
+        </button>
+      </>
     )
   } else {
     title = '大件基金'
@@ -144,15 +155,20 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
       </>
     )
     foot = (
-      <button
-        className="btn small"
-        onClick={() => {
-          setPage('goals')
-          onClose()
-        }}
-      >
-        去我的目标
-      </button>
+      <>
+        <button
+          className="btn small"
+          onClick={() => {
+            setPage('goals')
+            onClose()
+          }}
+        >
+          去我的目标
+        </button>
+        <button className="btn small" onClick={() => openAdjust('FUND')}>
+          手动调整…
+        </button>
+      </>
     )
   }
 

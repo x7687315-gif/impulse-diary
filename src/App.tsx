@@ -6,7 +6,9 @@ import { EntryFormGate } from './components/EntryForm'
 import { IslandBar } from './components/IslandBar'
 import { GoalsPage } from './pages/GoalsPage'
 import { StatsPage } from './pages/StatsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { Toast } from './components/Toast'
+import { AdjustDialog } from './components/AdjustDialog'
 import { Icon } from './components/icons'
 import { seedDemoData } from './seed'
 
@@ -16,6 +18,7 @@ export default function App() {
   const page = useUI((s) => s.page)
   const setSidebarOpen = useUI((s) => s.setSidebarOpen)
   const formEntryId = useUI((s) => s.formEntryId)
+  const adjustOpen = useUI((s) => s.adjustOpen)
 
   useEffect(() => {
     seedDemoData().catch(console.error)
@@ -37,12 +40,13 @@ export default function App() {
             {page === 'diary' && <DiaryPage />}
             {page === 'stats' && <StatsPage />}
             {page === 'goals' && <GoalsPage />}
-            {page === 'settings' && <Placeholder text="设置 · 阶段 8 实现" />}
+            {page === 'settings' && <SettingsPage />}
           </div>
         </div>
         {page === 'diary' && <DiaryDock />}
       </main>
       {formEntryId !== undefined && <EntryFormGate entryId={formEntryId} />}
+      {adjustOpen && <AdjustDialog />}
       <Toast />
     </div>
   )
