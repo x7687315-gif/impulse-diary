@@ -4,6 +4,9 @@ import { Sidebar } from './components/Sidebar'
 import { DiaryPage } from './pages/DiaryPage'
 import { EntryFormGate } from './components/EntryForm'
 import { IslandBar } from './components/IslandBar'
+import { GoalsPage } from './pages/GoalsPage'
+import { StatsPage } from './pages/StatsPage'
+import { Toast } from './components/Toast'
 import { Icon } from './components/icons'
 import { seedDemoData } from './seed'
 
@@ -32,14 +35,15 @@ export default function App() {
         <div className={'page-scroll' + (page === 'diary' ? ' with-island' : '')}>
           <div className="container">
             {page === 'diary' && <DiaryPage />}
-            {page === 'stats' && <Placeholder text="数据统计 · 阶段 6 实现" />}
-            {page === 'goals' && <Placeholder text="我的目标 · 阶段 5 实现" />}
+            {page === 'stats' && <StatsPage />}
+            {page === 'goals' && <GoalsPage />}
             {page === 'settings' && <Placeholder text="设置 · 阶段 8 实现" />}
           </div>
         </div>
         {page === 'diary' && <DiaryDock />}
       </main>
       {formEntryId !== undefined && <EntryFormGate entryId={formEntryId} />}
+      <Toast />
     </div>
   )
 }
