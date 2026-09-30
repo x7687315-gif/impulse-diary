@@ -21,6 +21,7 @@ export interface IslandModule {
 const TONES = {
   save: { tone: 'var(--save)', bg: 'var(--save-bg)' },
   spend: { tone: 'var(--spend)', bg: 'var(--spend-bg)' },
+  pending: { tone: 'var(--pending)', bg: 'var(--pending-bg)' },
 }
 
 export function IslandBar() {
@@ -43,7 +44,7 @@ export function IslandBar() {
     const tSum = goals.filter((g) => g.status === 'ACTIVE').reduce((x, g) => x + g.targetAmount, 0)
     return [
       { key: 'saved', label: '已节省', amount: fmt(saved), icon: 'saved', ...TONES.save },
-      { key: 'upcoming', label: '即将支出', amount: fmt(upcoming), icon: 'outgoing', ...TONES.spend },
+      { key: 'upcoming', label: '即将支出', amount: fmt(upcoming), icon: 'outgoing', ...TONES.pending },
       {
         key: 'fund',
         label: '大件基金',

@@ -16,14 +16,14 @@
   --save-bg: #E7F1EA;
   --spend: #C2543A;
   --spend-bg: #F8EDE7;
-  --pending: #B08A3E;
-  --pending-bg: #F7EFDC;
+  --pending: #3F7CBF;
+  --pending-bg: #E8F0F8;
   --tag-bg: #FCFBF9;
   --chip-on-bg: #F0EFE9;
   --chip-on-border: #B9B5A9;
   --d-save-border: #9CC4AE;
   --d-spend-border: #DBA08D;
-  --d-pending-border: #D3BC85;
+  --d-pending-border: #9DBEDD;
   --tabs-bg: #F0EFE9;
   --input-bg: #FCFBF9;
   --input-focus: #C9C5BA;
@@ -32,8 +32,8 @@
   --row-border: #F3F1EB;
   --preview-bg: #F6F8F4;
   --preview-border: #C9D6CB;
-  --banner-border: #E5D6AC;
-  --banner-fg: #7A5F22;
+  --banner-border: #C5D8EC;
+  --banner-fg: #2F5E8F;
   --scrim-bg: rgba(31, 30, 27, 0.34);
   --toast-bg: var(--ink);
   --toast-fg: var(--paper);
@@ -70,14 +70,14 @@
   --save-bg: #1F2E26;
   --spend: #E89077;
   --spend-bg: #322420;
-  --pending: #D9B96E;
-  --pending-bg: #2F2817;
+  --pending: #7FB1E8;
+  --pending-bg: #1E2A38;
   --tag-bg: #292722;
   --chip-on-bg: #2E2C26;
   --chip-on-border: #57534A;
   --d-save-border: #35594A;
   --d-spend-border: #5F4437;
-  --d-pending-border: #5A4D2C;
+  --d-pending-border: #34506E;
   --tabs-bg: #26241F;
   --input-bg: #201F1B;
   --input-focus: #4A463E;
@@ -86,8 +86,8 @@
   --row-border: #2C2A24;
   --preview-bg: #20241E;
   --preview-border: #35493C;
-  --banner-border: #4A4126;
-  --banner-fg: #D9B96E;
+  --banner-border: #2E4258;
+  --banner-fg: #8FBAE8;
   --scrim-bg: rgba(0, 0, 0, 0.5);
   --toast-bg: #2E2C28;
   --toast-fg: #ECEAE2;
@@ -219,6 +219,7 @@ h2.day-head span { font-size: 11px; color: var(--ink-3); font-weight: 400; }
 }
 .note-money { display: flex; flex-direction: column; gap: 3px; }
 .note-money span { font-size: 13px; font-variant-numeric: tabular-nums; }
+.note-actions { display: flex; gap: 8px; margin-top: 10px; }
 .pos { color: var(--save); }
 .neg { color: var(--spend); }
 .amb { color: var(--pending); }

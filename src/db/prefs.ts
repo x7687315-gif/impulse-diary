@@ -6,9 +6,10 @@ export interface AppPrefs {
   bufferHours: number
   seeded: boolean
   theme: ThemeMode
+  diaryRange: number
 }
 
-export const defaultPrefs: AppPrefs = { bufferHours: 48, seeded: false, theme: 'system' }
+export const defaultPrefs: AppPrefs = { bufferHours: 48, seeded: false, theme: 'system', diaryRange: 1 }
 
 export function loadPrefs(): AppPrefs {
   try {

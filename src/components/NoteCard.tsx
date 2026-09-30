@@ -11,10 +11,12 @@ export function NoteCard({
   entry,
   goals,
   onEdit,
+  onQuickAction,
 }: {
   entry: Entry
   goals: Goal[]
   onEdit: (e: Entry) => void
+  onQuickAction?: (e: Entry, action: 'pay' | 'cancel') => void
 }) {
   const goal = goals.find((g) => g.id === entry.targetId)
   const waitingH = Math.max(0, Math.floor((Date.now() - entry.createdAt) / 3600e3))
@@ -63,6 +65,16 @@ export function NoteCard({
           </span>
         )}
       </div>
+      {entry.decision === 'PLANNED' && onQuickAction && (
+        <div className="note-actions" onClick={(e) => e.stopPropagation()}>
+          <button className="btn small" onClick={() => onQuickAction(entry, 'pay')}>
+            标记为已支付
+          </button>
+          <button className="btn small danger" onClick={() => onQuickAction(entry, 'cancel')}>
+            不买了
+          </button>
+        </div>
+      )}
     </article>
   )
 }
