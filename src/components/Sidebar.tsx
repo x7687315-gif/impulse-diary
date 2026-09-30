@@ -13,6 +13,8 @@ export function Sidebar() {
   const setPage = useUI((s) => s.setPage)
   const open = useUI((s) => s.sidebarOpen)
   const setOpen = useUI((s) => s.setSidebarOpen)
+  const isDark = useUI((s) => s.isDark)
+  const setThemeMode = useUI((s) => s.setThemeMode)
 
   return (
     <>
@@ -29,6 +31,10 @@ export function Sidebar() {
             {it.label}
           </button>
         ))}
+        <button className="side-link" onClick={() => setThemeMode(isDark ? 'light' : 'dark')}>
+          <Icon name={isDark ? 'sun' : 'moon'} />
+          {isDark ? '浅色模式' : '深色模式'}
+        </button>
         <div className="side-foot">
           本地优先 · 数据只存在这台设备上
           <br />不联网 · 不上传 · 随时导出

@@ -8,6 +8,7 @@ const BUFFER_OPTIONS = [24, 48, 72]
 
 export function SettingsPage() {
   const showToast = useUI((s) => s.showToast)
+  const setThemeMode = useUI((s) => s.setThemeMode)
   const [prefs, setPrefs] = useState(loadPrefs())
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -45,7 +46,33 @@ export function SettingsPage() {
       <p className="page-title">这是你的私人日记本</p>
 
       <div className="card-block">
-        <p className="block-title">偏好</p>
+        <p className="block-title">外观与偏好</p>
+        <div className="set-row">
+          <span className="set-label">
+            主题
+            <span className="sub">「跟随系统」会在晚上自动切换成深色</span>
+          </span>
+          <span className="chips">
+            {(
+              [
+                ['system', '跟随系统'],
+                ['light', '浅色'],
+                ['dark', '深色'],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                className={'chip' + (prefs.theme === mode ? ' on' : '')}
+                onClick={() => {
+                  setPrefs({ ...prefs, theme: mode })
+                  setThemeMode(mode)
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </span>
+        </div>
         <div className="set-row">
           <span className="set-label">
             缓冲期默认时长

@@ -1,11 +1,14 @@
+import type { ThemeMode } from '../types'
+
 const KEY = 'impulse-diary-prefs'
 
 export interface AppPrefs {
   bufferHours: number
   seeded: boolean
+  theme: ThemeMode
 }
 
-export const defaultPrefs: AppPrefs = { bufferHours: 48, seeded: false }
+export const defaultPrefs: AppPrefs = { bufferHours: 48, seeded: false, theme: 'system' }
 
 export function loadPrefs(): AppPrefs {
   try {

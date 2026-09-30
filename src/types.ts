@@ -2,6 +2,7 @@ export type Decision = 'BOUGHT' | 'RESISTED' | 'DEFERRED' | 'SUBSTITUTED' | 'PLA
 export type Motive = 'STRESS' | 'WANT' | 'SOCIAL' | 'NECESSITY' | 'OTHER'
 export type Zone = 'FREE' | 'BUFFER' | 'CAUTION'
 export type AdjType = 'SAVED' | 'PLANNED' | 'FUND' | 'ACTUAL'
+export type ThemeMode = 'light' | 'dark' | 'system'
 
 export interface Entry {
   id: string

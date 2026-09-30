@@ -20,15 +20,15 @@ import { useUI } from '../state/uiStore'
 
 type Tab = 'week' | 'month' | 'year'
 
-const C_IMPULSE = '#8A887F'
-const C_SAVE = '#2F7D5C'
-const C_SPEND = '#C2543A'
+const C_IMPULSE = 'var(--chart-impulse)'
+const C_SAVE = 'var(--chart-save)'
+const C_SPEND = 'var(--chart-spend)'
 const MOTIVE_COLORS: Record<Motive, string> = {
-  STRESS: '#C2543A',
-  WANT: '#B08A3E',
-  SOCIAL: '#8A887F',
-  NECESSITY: '#5F5E5A',
-  OTHER: '#A8A69E',
+  STRESS: 'var(--chart-m-stress)',
+  WANT: 'var(--chart-m-want)',
+  SOCIAL: 'var(--chart-m-social)',
+  NECESSITY: 'var(--chart-m-necessity)',
+  OTHER: 'var(--chart-m-other)',
 }
 
 function monthDays(range: Range): number[] {

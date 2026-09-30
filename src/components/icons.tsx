@@ -15,6 +15,8 @@ const paths = {
   fund: <><circle cx="12" cy="12" r="8.4" /><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" /></>,
   clock: <><circle cx="12" cy="12" r="8.4" /><path d="M12 7.5V12l3 2.1" /></>,
   trash: <><path d="M4.5 6.5h15M9.5 6V4.8A1.3 1.3 0 0 1 10.8 3.5h2.4a1.3 1.3 0 0 1 1.3 1.3V6" /><path d="M6.5 6.5l1 12.2A1.6 1.6 0 0 0 9.1 20.2h5.8a1.6 1.6 0 0 0 1.6-1.5l1-12.2" /><path d="M10 10.5v5.5M14 10.5v5.5" /></>,
+  moon: <path d="M20 13.6A8.2 8.2 0 0 1 10.4 4 8.2 8.2 0 1 0 20 13.6z" />,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2.8v2M12 19.2v2M2.8 12h2M19.2 12h2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M18.7 5.3l-1.5 1.5M6.8 17.2l-1.5 1.5" /></>,
 } satisfies Record<string, ReactNode>
 
 export type IconName = keyof typeof paths

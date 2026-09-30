@@ -11,6 +11,7 @@ import { Toast } from './components/Toast'
 import { AdjustDialog } from './components/AdjustDialog'
 import { Icon } from './components/icons'
 import { seedDemoData } from './seed'
+import { applyTheme } from './theme'
 
 const titles = { diary: '消费日记', stats: '数据统计', goals: '我的目标', settings: '设置' } as const
 
@@ -19,9 +20,16 @@ export default function App() {
   const setSidebarOpen = useUI((s) => s.setSidebarOpen)
   const formEntryId = useUI((s) => s.formEntryId)
   const adjustOpen = useUI((s) => s.adjustOpen)
+  const isDark = useUI((s) => s.isDark)
+  const setThemeMode = useUI((s) => s.setThemeMode)
 
   useEffect(() => {
+    applyTheme(useUI.getState().themeMode)
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => useUI.getState().refreshTheme()
+    mq.addEventListener?.('change', onChange)
     seedDemoData().catch(console.error)
+    return () => mq.removeEventListener?.('change', onChange)
   }, [])
 
   return (
@@ -33,7 +41,13 @@ export default function App() {
             <Icon name="menu" />
           </button>
           <span className="topbar-title">{titles[page]}</span>
-          <span style={{ width: 40 }} />
+          <button
+            className="icon-btn"
+            onClick={() => setThemeMode(isDark ? 'light' : 'dark')}
+            aria-label="切换深浅模式"
+          >
+            <Icon name={isDark ? 'sun' : 'moon'} />
+          </button>
         </header>
         <div className={'page-scroll' + (page === 'diary' ? ' with-island' : '')}>
           <div className="container">
