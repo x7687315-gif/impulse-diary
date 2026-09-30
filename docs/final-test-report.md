@@ -30,11 +30,17 @@
 | 数据边界 | 仅本机 IndexedDB + localStorage；导出/导入仅用户手动触发 |
 | SW 缓存策略 | 同源 precache + autoUpdate + cleanupOutdatedCaches（规避旧 chunk 卡死坑） |
 
-## 5. 已知限制（不阻塞测试）
+## 5. 桌面快速启动
+- 桌面已放置 **`攒钱日记（测试版）.bat`**（GBK 编码，cmd 中文路径兼容）。
+- 双击 → 自动启动本地服务并打开浏览器；关闭黑色窗口即停止服务。
+- 技术细节：bat 内使用 node.exe 绝对路径直连 `vite.js preview`，不依赖系统 PATH（已验证 vite 正常启动，见 launch.log 记录）。
+- 曾尝试标准 .lnk（含图标），但程序化生成的 LNK 二进制未被 Windows Shell 接受，故采用 bat 方案；日后可手动右键 bat → 发送到桌面快捷方式换图标。
+
+## 6. 已知限制（不阻塞测试）
 - 时段统计的"即将支出"按 PLANNED 记录的创建时间归入时段（v1 简化口径）。
 - Service Worker 在 preview 下的更新需刷新一次生效（autoUpdate 行为，正常）。
 - 图标为程序化绘制（纯 Python 标准库），如需手绘艺术版随时可换。
 
-## 6. 下一步（手机端封装，等用户本机测试通过后）
+## 7. 下一步（手机端封装，等用户本机测试通过后）
 1. 用「发布为应用」把 dist 发布成 HTTPS 链接 → 手机 Chrome 打开 → 「添加到主屏幕」→ 获得独立图标、全屏、离线可用的 PWA。
 2. 如坚持要真 APK：工程已预留 Capacitor 出口（base './' 已就绪），需要本机 Android Studio + JDK。
