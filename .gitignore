@@ -4,3 +4,4 @@ dev-dist/
 *.local
 .DS_Store
 /impulse-diary-v*-dist.zip
+/我的数据备份-*.json
