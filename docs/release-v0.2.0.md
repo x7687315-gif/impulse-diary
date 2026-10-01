@@ -1,6 +1,7 @@
 # v0.2.0 手机版发布说明
 
 日期：2026-10-01 ｜ 类型：功能 + 优化 + 安全 ｜ 包：`impulse-diary-v0.2.0-dist.zip`（113 KB）
+**线上地址：https://impulse-diary.app.workbuddy.host/**（HTTPS，已验证 index / manifest / SW 全部 200）
 
 ## 新增：清理历史数据
 
