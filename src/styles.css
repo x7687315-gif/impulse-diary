@@ -263,6 +263,8 @@ h2.day-head span { font-size: 11px; color: var(--ink-3); font-weight: 400; }
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.pill-amount.bump { animation: bump 0.3s cubic-bezier(0.2, 0, 0, 1); }
+@keyframes bump { 0% { transform: scale(0.9); opacity: 0.4; } 100% { transform: none; opacity: 1; } }
 .island-dots { display: flex; justify-content: center; gap: 5px; margin-top: 9px; }
 .island-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: 0.45; }
 .island-dots i.on { background: var(--ink-2); opacity: 1; }

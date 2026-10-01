@@ -99,7 +99,7 @@ export function IslandBar() {
               <Icon name={m.icon} size={16} />
             </span>
             <span className="pill-label">{m.label}</span>
-            <span className="pill-amount" style={{ color: m.tone }}>{m.amount}</span>
+            <span className="pill-amount bump" key={m.amount} style={{ color: m.tone }}>{m.amount}</span>
           </div>
           <div className="island-dots">
             {mods.map((_, i) => (
@@ -128,7 +128,7 @@ export function IslandBar() {
                   <Icon name={mm.icon} size={16} />
                 </span>
                 <span className="pill-label">{mm.label}</span>
-                <span className="pill-amount" style={{ color: mm.tone }}>{mm.amount}</span>
+                <span className="pill-amount bump" key={mm.amount} style={{ color: mm.tone }}>{mm.amount}</span>
               </div>
               {mm.progress !== undefined && (
                 <div className="prog"><i style={{ width: `${Math.round(mm.progress * 100)}%` }} /></div>

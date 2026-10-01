@@ -123,8 +123,16 @@ function EntryForm({ entry }: { entry: Entry | null }) {
       } else {
         showToast(`+${fmt(derived.fund)} 已存入「${chosenGoal.name}」· 距离目标又近了 ${fmt(derived.fund)}`)
       }
+    } else if (decision === 'BOUGHT') {
+      showToast(`已记录 · −${fmt(derived.actual)} 实际支出`)
+    } else if (decision === 'PLANNED') {
+      showToast(`已计划 · ${fmt(derived.intended)} 进入「即将支出」`)
+    } else if (decision === 'DEFERRED') {
+      showToast(`已放入缓冲期 · ${bufferH} 小时后提醒你做决定`)
     } else if (isNew && derived.saved > 0) {
       showToast(`已记录 · +${fmt(derived.saved)} 已节省`)
+    } else {
+      showToast('已更新')
     }
     closeForm()
   }

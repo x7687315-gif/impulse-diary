@@ -62,11 +62,9 @@ export function GoalsPage() {
           </div>
         )
       })}
-      {goals.length > 0 && (
-        <button className="btn" style={{ width: '100%' }} onClick={() => setEditing('new')}>
-          ＋ 新建目标
-        </button>
-      )}
+      <button className="btn" style={{ width: '100%' }} onClick={() => setEditing('new')}>
+        ＋ 新建目标
+      </button>
       {editing && (
         <GoalForm
           goal={editing === 'new' ? null : editing}
