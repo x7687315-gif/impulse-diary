@@ -281,14 +281,18 @@ h2.day-head span { font-size: 11px; color: var(--ink-3); font-weight: 400; }
 /* ---------- 明细面板（岛上方） ---------- */
 .sheet-ov { position: fixed; inset: 0; z-index: 45; }
 .sheet {
-  position: fixed; left: 50%; transform: translateX(-50%);
+  position: fixed; left: 50%; transform: translate(-50%, 0);
   bottom: calc(84px + var(--sab));
   width: min(92%, 360px); z-index: 46;
   background: var(--card); border: 1px solid var(--line);
   border-radius: 18px; box-shadow: var(--shadow-pop);
   padding: 16px 16px 14px;
-  animation: rise 0.22s cubic-bezier(0.2, 0, 0, 1) both;
+  animation: sheetUp 0.22s cubic-bezier(0.2, 0, 0, 1) both;
   max-height: 52dvh; overflow-y: auto;
+}
+@keyframes sheetUp {
+  from { transform: translate(-50%, 14px); opacity: 0.6; }
+  to { transform: translate(-50%, 0); opacity: 1; }
 }
 .sheet-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .sheet-title { font-size: 13px; font-weight: 500; flex: 1; }
@@ -456,14 +460,18 @@ select.input option { background: var(--card); color: var(--ink); }
 
 /* ---------- 提示浮层 ---------- */
 .toast {
-  position: fixed; left: 50%; transform: translateX(-50%);
+  position: fixed; left: 50%; transform: translate(-50%, 0);
   bottom: calc(96px + var(--sab));
   background: var(--toast-bg); color: var(--toast-fg);
   padding: 10px 20px; border-radius: 999px;
   font-size: 13px; z-index: 95;
   box-shadow: var(--shadow-pop);
-  animation: rise 0.24s cubic-bezier(0.2, 0, 0, 1) both;
+  animation: toastUp 0.24s cubic-bezier(0.2, 0, 0, 1) both;
   max-width: 86vw; text-align: center;
+}
+@keyframes toastUp {
+  from { transform: translate(-50%, 12px); opacity: 0.4; }
+  to { transform: translate(-50%, 0); opacity: 1; }
 }
 
 /* ---------- 移动端自适应 ---------- */
