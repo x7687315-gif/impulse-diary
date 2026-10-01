@@ -2,15 +2,28 @@ import { useRef, useState } from 'react'
 import { loadPrefs, savePrefs } from '../db/prefs'
 import { exportAll, downloadExport, importAll } from '../db/backup'
 import { seedDemoData, clearAllData } from '../seed'
+import { db } from '../db/db'
 import { useUI } from '../state/uiStore'
 
 const BUFFER_OPTIONS = [24, 48, 72]
+const CLEAN_RANGES = [
+  { days: 30, label: '30 天前' },
+  { days: 90, label: '3 个月前' },
+  { days: 365, label: '1 年前' },
+]
+
+function cnDate(ts: number): string {
+  const d = new Date(ts)
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+}
 
 export function SettingsPage() {
   const showToast = useUI((s) => s.showToast)
   const setThemeMode = useUI((s) => s.setThemeMode)
   const [prefs, setPrefs] = useState(loadPrefs())
   const [busy, setBusy] = useState(false)
+  const [cleanDays, setCleanDays] = useState(30)
+  const [cleanAdj, setCleanAdj] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   function setBuffer(h: number) {
@@ -39,6 +52,29 @@ export function SettingsPage() {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
     }
+  }
+
+  async function doClean() {
+    const cutoff = Date.now() - cleanDays * 864e5
+    const cnt = await db.entries.where('createdAt').below(cutoff).count()
+    const adjCnt = cleanAdj ? await db.adjustments.where('createdAt').below(cutoff).count() : 0
+    if (cnt === 0 && adjCnt === 0) {
+      showToast('这个范围之前没有可清理的数据')
+      return
+    }
+    const msg =
+      `将删除 ${cnDate(cutoff)} 之前的 ${cnt} 条记录` +
+      (cleanAdj ? ` 和 ${adjCnt} 条调整流水` : '') +
+      '，不可恢复。确定继续吗？（建议先导出备份）'
+    if (!window.confirm(msg)) return
+    if (!window.confirm('再次确认：真的要清理吗？')) return
+    setBusy(true)
+    await db.transaction('rw', db.entries, db.adjustments, async () => {
+      await db.entries.where('createdAt').below(cutoff).delete()
+      if (cleanAdj) await db.adjustments.where('createdAt').below(cutoff).delete()
+    })
+    setBusy(false)
+    showToast(`已清理 ${cnt} 条记录${cleanAdj ? ` · ${adjCnt} 条调整流水` : ''}`)
   }
 
   return (
@@ -158,9 +194,48 @@ export function SettingsPage() {
       </div>
 
       <div className="card-block">
+        <p className="block-title">清理历史数据</p>
+        <div className="set-row">
+          <span className="set-label">
+            清理范围
+            <span className="sub">删除该时间点之前的记录；目标与偏好不受影响</span>
+          </span>
+          <span className="chips">
+            {CLEAN_RANGES.map((r) => (
+              <button
+                key={r.days}
+                className={'chip' + (cleanDays === r.days ? ' on' : '')}
+                onClick={() => setCleanDays(r.days)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </span>
+        </div>
+        <div className="set-row">
+          <span className="set-label">
+            同时清理手动调整流水
+            <span className="sub">调整记录一并删除，统计基线随之重置</span>
+          </span>
+          <button className={'chip' + (cleanAdj ? ' on' : '')} onClick={() => setCleanAdj(!cleanAdj)}>
+            {cleanAdj ? '✓ 一并清理' : '保留'}
+          </button>
+        </div>
+        <div className="set-row">
+          <span className="set-label">
+            执行清理
+            <span className="sub">不可恢复 —— 数据随时可以导出，清理前建议先备份</span>
+          </span>
+          <button className="btn small danger" disabled={busy} onClick={doClean}>
+            清理
+          </button>
+        </div>
+      </div>
+
+      <div className="card-block">
         <p className="block-title">关于</p>
         <div className="about">
-          攒钱日记 · v0.1（Local-first 测试版）
+          攒钱日记 · v0.2（手机版）
           <br />
           「不是记录我花了多少钱，而是记录我如何面对自己的消费欲望。」
           <br />

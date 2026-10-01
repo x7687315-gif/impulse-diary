@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import type { Entry } from '../types'
@@ -38,19 +38,20 @@ function groupByDay(entries: Entry[]): DayGroup[] {
 }
 
 export function DiaryPage() {
-  const entries = useLiveQuery(() => db.entries.orderBy('createdAt').reverse().toArray())
   const goals = useLiveQuery(() => db.goals.toArray())
   const openForm = useUI((s) => s.openForm)
   const showToast = useUI((s) => s.showToast)
   const [range, setRange] = useState(loadPrefs().diaryRange ?? 1)
 
-  const filtered = useMemo(() => {
-    if (!entries) return []
-    const start = addDays(startOfDay(Date.now()), -(range - 1))
-    return entries.filter((e) => e.createdAt >= start)
-  }, [entries, range])
-
-  if (!entries || !goals) return <div className="loading">…</div>
+  // 性能：按所选时间范围走 createdAt 索引查询，不整表加载 —— 数据再多也不卡
+  const filtered = useLiveQuery(
+    () =>
+      db.entries
+        .where('createdAt')
+        .aboveOrEqual(addDays(startOfDay(Date.now()), -(range - 1)))
+        .toArray(),
+    [range],
+  )
 
   function changeRange(d: number) {
     setRange(d)
@@ -82,6 +83,8 @@ export function DiaryPage() {
     })
     showToast(`+${fmt(e.intendedAmount)} 已节省 · 想存基金的话进编辑页拨付`)
   }
+
+  if (!filtered || !goals) return <div className="loading">…</div>
 
   const groups = groupByDay(filtered)
 
