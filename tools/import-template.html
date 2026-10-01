@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>攒钱日记 · 数据导入</title>
+<style>
+  body { margin:0; padding:32px 20px 48px; background:#FAFAF7; color:#1F1E1B;
+    font-family: system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:420px; margin:0 auto; }
+  h1 { font-family:Georgia,"Times New Roman","Noto Serif SC","SimSun",serif; font-size:20px; font-weight:500; margin:0 0 6px; }
+  .sub { font-size:13px; color:#A8A69E; margin:0 0 22px; line-height:1.6; }
+  .card { background:#fff; border:1px solid #ECEAE4; border-radius:16px; padding:16px 18px; margin-bottom:14px; }
+  .row { display:flex; justify-content:space-between; font-size:14px; padding:5px 0; }
+  .row b { font-variant-numeric:tabular-nums; }
+  .row .pos { color:#2F7D5C; } .row .neg { color:#C2543A; }
+  button { width:100%; min-height:48px; border:none; border-radius:14px; background:#1F1E1B; color:#FAFAF7;
+    font-size:15px; font-weight:600; cursor:pointer; margin-top:6px; }
+  button.ghost { background:none; border:1px solid #ECEAE4; color:#6F6D66; font-weight:400; margin-top:10px; }
+  button:disabled { opacity:.45; }
+  #status { font-size:13px; color:#2F7D5C; margin-top:14px; line-height:1.7; min-height:20px; }
+  .open { display:none; text-align:center; margin-top:16px; }
+  .open a { color:#2F7D5C; font-size:15px; font-weight:600; text-decoration:none;
+    border:1px solid #9CC4AE; border-radius:12px; padding:12px 22px; display:inline-block; }
+  .warn { font-size:11.5px; color:#A8A69E; margin-top:16px; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>攒钱日记 · 专属数据导入</h1>
+  <p class="sub">你这几天的真实记录已经打包好。点下面按钮，数据会直接写进这台设备上的攒钱日记（替换现有全部数据）。</p>
+  <div class="card" id="summary">正在读取数据包…</div>
+  <button id="go" disabled>一键导入到攒钱日记</button>
+  <button class="ghost" id="dl">下载 JSON 备份文件</button>
+  <div id="status"></div>
+  <div class="open" id="openRow"><a href="./">打开攒钱日记 →</a></div>
+  <p class="warn">导入为整体替换（记录 / 目标 / 调整）。完成后此页面即可关闭；数据只存在你的设备本地。</p>
+</div>
+<script>
+let DATA = null
+const status = (t, cls) => { const s = document.getElementById('status'); s.textContent = t; s.style.color = cls || '#2F7D5C' }
+
+function money(n){ const v = Math.round(n*100)/100; return '¥' + (Number.isInteger(v) ? v : v.toFixed(2)) }
+
+function summarize(d){
+  const impulse = d.entries.reduce((s,e)=>s+e.intendedAmount,0)
+  const actual  = d.entries.reduce((s,e)=>s+e.actualAmount,0)
+  const saved   = d.entries.reduce((s,e)=>s+e.savedAmount,0)
+  const fund    = d.entries.reduce((s,e)=>s+e.fundAmount,0)
+  const ds = d.entries.map(e=>e.createdAt)
+  const f = ts => { const x=new Date(ts); return `${x.getMonth()+1}月${x.getDate()}日` }
+  document.getElementById('summary').innerHTML =
+    `<div class="row"><span>记录</span><b>${d.entries.length} 条（${f(Math.min(...ds))} – ${f(Math.max(...ds))}）</b></div>`+
+    `<div class="row"><span>消费冲动</span><b>${money(impulse)}</b></div>`+
+    `<div class="row"><span>实际支出</span><b class="neg">${money(actual)}</b></div>`+
+    `<div class="row"><span>已节省</span><b class="pos">${money(saved)}</b></div>`+
+    `<div class="row"><span>大件基金</span><b class="pos">${money(fund)}${d.goals.length?` / 目标「${d.goals[0].name}」${money(d.goals[0].targetAmount)}`:''}</b></div>`
+}
+
+function openDb(){
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('impulse-diary', 1)
+    req.onupgradeneeded = () => {
+      const db = req.result
+      if (!db.objectStoreNames.contains('entries')) {
+        const s = db.createObjectStore('entries', { keyPath: 'id' })
+        s.createIndex('createdAt','createdAt'); s.createIndex('decision','decision')
+        s.createIndex('motive','motive'); s.createIndex('targetId','targetId')
+      }
+      if (!db.objectStoreNames.contains('goals')) {
+        const s = db.createObjectStore('goals', { keyPath: 'id' })
+        s.createIndex('createdAt','createdAt'); s.createIndex('status','status')
+      }
+      if (!db.objectStoreNames.contains('adjustments')) {
+        const s = db.createObjectStore('adjustments', { keyPath: 'id' })
+        s.createIndex('createdAt','createdAt'); s.createIndex('type','type'); s.createIndex('targetId','targetId')
+      }
+    }
+    req.onsuccess = () => res(req.result)
+    req.onerror = () => rej(req.error)
+  })
+}
+
+async function doImport(){
+  document.getElementById('go').disabled = true
+  status('正在写入…')
+  try {
+    const db = await openDb()
+    await new Promise((res, rej) => {
+      const tx = db.transaction(['entries','goals','adjustments'], 'readwrite')
+      tx.objectStore('entries').clear()
+      tx.objectStore('goals').clear()
+      tx.objectStore('adjustments').clear()
+      for (const e of DATA.entries) tx.objectStore('entries').put(e)
+      for (const g of DATA.goals) tx.objectStore('goals').put(g)
+      for (const a of DATA.adjustments) tx.objectStore('adjustments').put(a)
+      tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error)
+    })
+    let prefs = {}
+    try { prefs = JSON.parse(localStorage.getItem('impulse-diary-prefs') || '{}') } catch (e) {}
+    prefs.seeded = true
+    if (!prefs.theme) prefs.theme = 'system'
+    if (!prefs.bufferHours) prefs.bufferHours = 48
+    if (!prefs.diaryRange) prefs.diaryRange = 1
+    localStorage.setItem('impulse-diary-prefs', JSON.stringify(prefs))
+    status(`✓ 导入完成：${DATA.entries.length} 条记录 · ${DATA.goals.length} 个目标已写入本设备`)
+    document.getElementById('openRow').style.display = 'block'
+  } catch (err) {
+    status('导入失败：' + (err && err.message || err), '#C2543A')
+    document.getElementById('go').disabled = false
+  }
+}
+
+function download(){
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: 'application/json' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = '攒钱日记-我的数据-20261001.json'
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000)
+}
+
+fetch('./import-data.json', { cache: 'no-store' })
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() })
+  .then(d => {
+    if (d.schemaVersion !== 1 || !Array.isArray(d.entries)) throw new Error('数据包格式不正确')
+    DATA = d; summarize(d)
+    document.getElementById('go').disabled = false
+  })
+  .catch(err => { document.getElementById('summary').textContent = '数据包读取失败：' + err.message; status('请刷新重试', '#C2543A') })
+
+document.getElementById('go').addEventListener('click', doImport)
+document.getElementById('dl').addEventListener('click', download)
+</script>
+</body>
+</html>
