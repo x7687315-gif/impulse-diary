@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
-import { adjSum, fmt, fundInOf, statsOf } from '../db/stats'
+import { adjSum, fmt, fundInOf, startOfDay, statsOf, todaySpent } from '../db/stats'
 import { useUI } from '../state/uiStore'
 import type { Adjustment, Entry } from '../types'
 import { ADJ_LABEL } from '../types'
@@ -111,7 +111,7 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
         </button>
       </>
     )
-  } else {
+  } else if (index === 2) {
     title = '大件基金'
     const total = fundInOf(entries, adjs)
     const tSum = goals.filter((g) => g.status === 'ACTIVE').reduce((x, g) => x + g.targetAmount, 0)
@@ -166,6 +166,51 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
           去我的目标
         </button>
         <button className="btn small" onClick={() => openAdjust('FUND')}>
+          手动调整…
+        </button>
+      </>
+    )
+  } else {
+    const start = startOfDay(Date.now())
+    const spentToday = todaySpent(entries, adjs)
+    title = '今日已支出'
+    amount = fmt(spentToday)
+    amountClass = spentToday > 0 ? 'neg' : ''
+    const items = entries
+      .filter((e) => e.createdAt >= start && e.actualAmount > 0)
+      .sort(byTime)
+    const adjsActual = adjs
+      .filter((a) => a.createdAt >= start && a.type === 'ACTUAL')
+      .sort((a, b) => b.createdAt - a.createdAt)
+    body = (
+      <>
+        {items.map((e) => {
+          const d = new Date(e.createdAt)
+          return (
+            <Row
+              key={e.id}
+              main={short(e.content)}
+              num={`−${fmt(e.actualAmount)}`}
+              numClass="neg"
+              sub={`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`}
+            />
+          )
+        })}
+        {adjsActual.map((a) => {
+          const r = adjRow(a)
+          return <Row key={a.id} main={r.main} num={r.num} numClass={a.amount >= 0 ? 'neg' : 'pos'} />
+        })}
+        {items.length === 0 && adjsActual.length === 0 && (
+          <div className="loading" style={{ padding: '18px 0' }}>今天还没有支出</div>
+        )}
+      </>
+    )
+    foot = (
+      <>
+        <button className="btn small" onClick={() => openForm(null)}>
+          记一笔
+        </button>
+        <button className="btn small" onClick={() => openAdjust('ACTUAL')}>
           手动调整…
         </button>
       </>

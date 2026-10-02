@@ -178,6 +178,7 @@ button { font-family: inherit; }
   overscroll-behavior-y: contain;
 }
 .page-scroll.with-island { padding-bottom: calc(168px + var(--sab)); }
+.page-scroll.with-island-expanded { padding-bottom: calc(300px + var(--sab)); }
 .container { max-width: 640px; margin: 0 auto; }
 .page-title {
   font-size: 13px; color: var(--ink-3); font-weight: 400;
@@ -265,9 +266,17 @@ h2.day-head span { font-size: 11px; color: var(--ink-3); font-weight: 400; }
 }
 .pill-amount.bump { animation: bump 0.3s cubic-bezier(0.2, 0, 0, 1); }
 @keyframes bump { 0% { transform: scale(0.9); opacity: 0.4; } 100% { transform: none; opacity: 1; } }
-.island-dots { display: flex; justify-content: center; gap: 5px; margin-top: 9px; }
-.island-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: 0.45; }
-.island-dots i.on { background: var(--ink-2); opacity: 1; }
+.island-dots { display: flex; justify-content: center; gap: 2px; margin-top: 9px; }
+.island-dots i {
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; background: none;
+}
+.island-dots i::after {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--ink-3); opacity: 0.45; transition: all 0.15s;
+}
+.island-dots i.on::after { background: var(--ink-2); opacity: 1; width: 6px; height: 6px; }
 .island-stack { display: flex; flex-direction: column; gap: 8px; }
 .island-stack .pill {
   cursor: pointer; user-select: none;
@@ -488,6 +497,7 @@ select.input option { background: var(--card); color: var(--ink); }
   .topbar { display: flex; }
   .page-scroll { padding: 20px 16px 48px; }
   .page-scroll.with-island { padding-bottom: calc(160px + var(--sab)); }
+  .page-scroll.with-island-expanded { padding-bottom: calc(292px + var(--sab)); }
   .metrics { grid-template-columns: repeat(2, 1fr); }
 }
 @media (min-width: 769px) {

@@ -2,11 +2,12 @@ import { useMemo, useRef, useState } from 'react'
 import type { PointerEvent as RPointerEvent } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
-import { adjSum, fmt, fundInOf, statsOf } from '../db/stats'
+import { adjSum, fmt, fundInOf, statsOf, todaySpent } from '../db/stats'
+import { useUI } from '../state/uiStore'
 import { Icon, type IconName } from './icons'
 import { IslandDetail } from './IslandDetail'
 
-export type IslandKey = 'saved' | 'upcoming' | 'fund'
+export type IslandKey = 'saved' | 'upcoming' | 'fund' | 'today'
 
 export interface IslandModule {
   key: IslandKey
@@ -30,10 +31,11 @@ export function IslandBar() {
   const goals = useLiveQuery(() => db.goals.toArray())
 
   const [idx, setIdx] = useState(0)
-  const [expanded, setExpanded] = useState(false)
   const [detail, setDetail] = useState<number | null>(null)
   const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const pdown = useRef<{ x: number; y: number } | null>(null)
+  const expanded = useUI((s) => s.islandExpanded)
+  const setExpanded = useUI((s) => s.setIslandExpanded)
 
   const mods: IslandModule[] = useMemo(() => {
     if (!entries || !adjs || !goals) return []
@@ -41,6 +43,7 @@ export function IslandBar() {
     const saved = s.saved + adjSum(adjs, 'SAVED')
     const upcoming = s.planned + adjSum(adjs, 'PLANNED')
     const fund = fundInOf(entries, adjs)
+    const spentToday = todaySpent(entries, adjs)
     const tSum = goals.filter((g) => g.status === 'ACTIVE').reduce((x, g) => x + g.targetAmount, 0)
     return [
       { key: 'saved', label: '已节省', amount: fmt(saved), icon: 'saved', ...TONES.save },
@@ -53,13 +56,21 @@ export function IslandBar() {
         ...TONES.save,
         progress: tSum > 0 ? Math.min(1, fund / tSum) : undefined,
       },
+      {
+        key: 'today',
+        label: '今日已支出',
+        amount: fmt(spentToday),
+        icon: 'cart',
+        tone: spentToday > 0 ? TONES.spend.tone : 'var(--ink-3)',
+        bg: spentToday > 0 ? TONES.spend.bg : 'var(--card-2)',
+      },
     ]
   }, [entries, adjs, goals])
 
   if (mods.length === 0) return null
 
   const slide = (d: number) => setIdx((i) => (i + d + mods.length) % mods.length)
-  const toggle = () => setExpanded((v) => !v)
+  const toggle = () => setExpanded(!expanded)
   const openDetail = (i: number) => setDetail(i)
   const pillClick = (i: number) => {
     clearTimeout(clickTimer.current)
@@ -103,7 +114,13 @@ export function IslandBar() {
           </div>
           <div className="island-dots">
             {mods.map((_, i) => (
-              <i key={i} className={i === idx ? 'on' : ''} />
+              <i
+                key={i}
+                className={i === idx ? 'on' : ''}
+                onClick={() => setIdx(i)}
+                role="button"
+                aria-label={`切换到第 ${i + 1} 个岛：${mods[i].label}`}
+              />
             ))}
           </div>
         </>

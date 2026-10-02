@@ -20,6 +20,7 @@ export default function App() {
   const setSidebarOpen = useUI((s) => s.setSidebarOpen)
   const formEntryId = useUI((s) => s.formEntryId)
   const adjustOpen = useUI((s) => s.adjustOpen)
+  const islandExpanded = useUI((s) => s.islandExpanded)
   const isDark = useUI((s) => s.isDark)
   const setThemeMode = useUI((s) => s.setThemeMode)
 
@@ -49,7 +50,13 @@ export default function App() {
             <Icon name={isDark ? 'sun' : 'moon'} />
           </button>
         </header>
-        <div className={'page-scroll' + (page === 'diary' ? ' with-island' : '')}>
+        <div
+          className={
+            'page-scroll' +
+            (page === 'diary' ? ' with-island' : '') +
+            (islandExpanded ? ' with-island-expanded' : '')
+          }
+        >
           <div className="container">
             {page === 'diary' && <DiaryPage />}
             {page === 'stats' && <StatsPage />}

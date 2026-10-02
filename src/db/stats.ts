@@ -58,6 +58,18 @@ export function inRange(ts: number, r: Range): boolean {
   return ts >= r.start && ts < r.end
 }
 
+/** 今日已支出：当日实际支出（含手动调整的 ACTUAL 流水） */
+export function todaySpent(entries: Entry[], adjs: Adjustment[]): number {
+  const start = startOfDay(Date.now())
+  const spent = entries
+    .filter((e) => e.createdAt >= start)
+    .reduce((s, e) => s + e.actualAmount, 0)
+  const adj = adjs
+    .filter((a) => a.createdAt >= start && a.type === 'ACTUAL')
+    .reduce((s, a) => s + a.amount, 0)
+  return spent + adj
+}
+
 // 口径（与 design-spec.md §4 矩阵一一对应）
 export function statsOf(entries: Entry[]): Omit<MoneyStats, 'fundIn'> {
   let impulse = 0, actual = 0, saved = 0, planned = 0

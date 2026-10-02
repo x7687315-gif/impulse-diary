@@ -16,6 +16,8 @@ interface UIState {
   adjustType: AdjType
   openAdjust: (t?: AdjType) => void
   closeAdjust: () => void
+  islandExpanded: boolean
+  setIslandExpanded: (v: boolean) => void
   toast: string | null
   showToast: (msg: string) => void
   themeMode: ThemeMode
@@ -38,6 +40,8 @@ export const useUI = create<UIState>((set) => ({
   adjustType: 'SAVED',
   openAdjust: (adjustType = 'SAVED') => set({ adjustOpen: true, adjustType }),
   closeAdjust: () => set({ adjustOpen: false }),
+  islandExpanded: false,
+  setIslandExpanded: (islandExpanded) => set({ islandExpanded }),
   toast: null,
   showToast: (msg) => {
     if (toastTimer) clearTimeout(toastTimer)
