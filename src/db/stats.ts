@@ -1,4 +1,4 @@
-import type { Decision, Entry, Adjustment, AdjType } from '../types'
+import type { Decision, Entry, Adjustment, AdjType, Goal } from '../types'
 import { db } from './db'
 
 export interface MoneyStats {
@@ -82,15 +82,46 @@ export function statsOf(entries: Entry[]): Omit<MoneyStats, 'fundIn'> {
   return { impulse, actual, saved, planned, count: entries.length }
 }
 
-export function fundInOf(entries: Entry[], adjs: Adjustment[], targetId?: string): number {
-  const fromEntries = entries.reduce(
-    (s, e) => s + (targetId ? (e.targetId === targetId ? e.fundAmount : 0) : e.fundAmount),
-    0,
-  )
+/** 基金总池：所有存入金额（含手动调整），不再按目标拆分 */
+export function fundPool(entries: Entry[], adjs: Adjustment[]): number {
+  const fromEntries = entries.reduce((s, e) => s + e.fundAmount, 0)
   const fromAdj = adjs
-    .filter((a) => a.type === 'FUND' && (!targetId || a.targetId === targetId))
+    .filter((a) => a.type === 'FUND')
     .reduce((s, a) => s + a.amount, 0)
   return fromEntries + fromAdj
+}
+
+export interface FundStage {
+  goal: Goal
+  /** 瀑布分配后该目标实际拿到的金额 */
+  allocated: number
+  reached: boolean
+  /** 是否为当前正在存入的目标（第一个未达成的） */
+  filling: boolean
+}
+
+/**
+ * 瀑布式自动分配：目标按创建时间排序，钱先填满第一个，
+ * 溢出自动流入第二个、第三个……（用户无需手动选择存入哪个目标）
+ */
+export function allocateFund(goals: Goal[], pool: number): FundStage[] {
+  const out: FundStage[] = []
+  let rest = pool
+  const sorted = [...goals].sort((a, b) => a.createdAt - b.createdAt)
+  sorted.forEach((g, i) => {
+    const allocated = Math.max(0, Math.min(rest, g.targetAmount))
+    const reached = allocated >= g.targetAmount
+    const filling = !reached && (i === 0 || out[i - 1].reached)
+    out.push({ goal: g, allocated, reached, filling })
+    rest -= allocated
+  })
+  return out
+}
+
+/** 实时读取当前基金总池（保存前用于对比是否跨过达成线） */
+export async function fundPoolNow(): Promise<number> {
+  const [es, as] = await Promise.all([db.entries.toArray(), db.adjustments.toArray()])
+  return fundPool(es, as)
 }
 
 export function adjSum(adjs: Adjustment[], type: AdjType, targetId?: string): number {
@@ -134,10 +165,4 @@ export function sumsByDay(entries: Entry[], dayStarts: number[]): DaySums[] {
     }
   }
   return dayStarts.map((d) => map.get(d)!)
-}
-
-export async function fundBalance(targetId: string): Promise<number> {
-  const es = await db.entries.where('targetId').equals(targetId).toArray()
-  const as = await db.adjustments.where('targetId').equals(targetId).toArray()
-  return fundInOf(es, as, targetId)
 }

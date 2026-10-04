@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
-import { fmt, fundInOf } from '../db/stats'
+import { allocateFund, fmt, fundPool } from '../db/stats'
 import { useUI } from '../state/uiStore'
 import type { Goal } from '../types'
 import { Icon } from '../components/icons'
@@ -15,6 +15,13 @@ export function GoalsPage() {
 
   if (!goals || !entries || !adjs) return <div className="loading">…</div>
 
+  // 瀑布分配：钱按目标创建顺序自动填充，达成后溢出流入下一个
+  const stages = allocateFund(
+    goals.filter((g) => g.status !== 'PAUSED'),
+    fundPool(entries, adjs),
+  )
+  const paused = goals.filter((g) => g.status === 'PAUSED')
+
   return (
     <div>
       <p className="page-title">真正想要的东西，一笔一笔攒出来</p>
@@ -22,27 +29,31 @@ export function GoalsPage() {
         <div className="empty-note">
           还没有目标。
           <br />
-          建一个「真正想要」的目标，之后每次忍住消费冲动，都能把钱存给它。
+          建一个「真正想要」的目标，之后每次忍住消费冲动，省下的钱都会自动存进来。
         </div>
       )}
-      {goals.map((g) => {
-        const cur = fundInOf(entries, adjs, g.id)
-        const pct = Math.min(100, Math.round((cur / g.targetAmount) * 100))
-        const reached = cur >= g.targetAmount
+      {stages.map((st, i) => {
+        const g = st.goal
+        const pct = Math.min(100, Math.round((st.allocated / g.targetAmount) * 100))
         return (
           <div key={g.id} className="goal-card">
             <div className="goal-top">
-              <span className="goal-name">{g.name}</span>
+              <span className="goal-name">
+                <span style={{ fontSize: 11, color: 'var(--ink-3)', marginRight: 6 }}>第 {i + 1} 阶段</span>
+                {g.name}
+              </span>
               <span className="goal-nums">
-                <b>{fmt(cur)}</b> <span>/ {fmt(g.targetAmount)}</span>
+                <b>{fmt(st.allocated)}</b> <span>/ {fmt(g.targetAmount)}</span>
               </span>
             </div>
             <div className="prog"><i style={{ width: `${pct}%` }} /></div>
             <div className="goal-remain">
-              {reached ? (
-                <span className="goal-done">已达成 · 可以真正拥有它了</span>
+              {st.reached ? (
+                <span className="goal-done">已达成 · 这笔省下的钱变成了它</span>
+              ) : st.filling ? (
+                <>正在存入 · 还差 {fmt(g.targetAmount - st.allocated)} · 已完成 {pct}%</>
               ) : (
-                <>距离目标还差 {fmt(g.targetAmount - cur)} · 已完成 {pct}%</>
+                <>排队中 · 前面阶段达成后自动开始存入</>
               )}
               {g.deadline && <> · {new Date(g.deadline).getMonth() + 1}月{new Date(g.deadline).getDate()}日前</>}
             </div>
@@ -51,24 +62,9 @@ export function GoalsPage() {
               <button
                 className="btn small danger"
                 onClick={async () => {
-                  const cur = fundInOf(entries, adjs, g.id)
-                  const others = goals.filter((x) => x.id !== g.id && x.status === 'ACTIVE')
-                  if (cur > 0 && others.length > 0) {
-                    const to = others[0]
-                    const ok = window.confirm(
-                      `删除目标「${g.name}」？其中已存的 ${fmt(cur)} 将转入「${to.name}」（确定=转存并删除）。`,
-                    )
-                    if (!ok) return
-                    await db.entries.where('targetId').equals(g.id).modify({ targetId: to.id })
-                    await db.adjustments.where('targetId').equals(g.id).modify({ targetId: to.id })
-                    await db.goals.delete(g.id)
-                    showToast(`目标已删除 · ${fmt(cur)} 已转入「${to.name}」`)
-                  } else {
-                    const tip = cur > 0 ? `其中已存的 ${fmt(cur)} 将变为未分配（不再计入任何单个目标）。` : ''
-                    if (!window.confirm(`删除目标「${g.name}」？${tip}`)) return
-                    await db.goals.delete(g.id)
-                    showToast(cur > 0 ? '目标已删除 · 已存金额变为未分配' : '目标已删除')
-                  }
+                  if (!window.confirm(`删除目标「${g.name}」（第 ${i + 1} 阶段）？省下的钱会自动流入后面的目标，历史记录仍保留在日记中。`)) return
+                  await db.goals.delete(g.id)
+                  showToast('目标已删除 · 省下的钱自动流入后面的目标')
                 }}
               >
                 删除
@@ -77,6 +73,29 @@ export function GoalsPage() {
           </div>
         )
       })}
+      {paused.map((g) => (
+        <div key={g.id} className="goal-card" style={{ opacity: 0.6 }}>
+          <div className="goal-top">
+            <span className="goal-name">{g.name}（已暂停）</span>
+            <span className="goal-nums">
+              <b>0</b> <span>/ {fmt(g.targetAmount)}</span>
+            </span>
+          </div>
+          <div className="goal-actions">
+            <button className="btn small" onClick={() => setEditing(g)}>编辑</button>
+            <button
+              className="btn small danger"
+              onClick={async () => {
+                if (!window.confirm(`删除已暂停的目标「${g.name}」？`)) return
+                await db.goals.delete(g.id)
+                showToast('目标已删除')
+              }}
+            >
+              删除
+            </button>
+          </div>
+        </div>
+      ))}
       <button className="btn" style={{ width: '100%' }} onClick={() => setEditing('new')}>
         ＋ 新建目标
       </button>
@@ -84,7 +103,7 @@ export function GoalsPage() {
         <GoalForm
           goal={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
-          onSaved={(name, created) => showToast(created ? `目标「${name}」已创建` : `「${name}」已更新`)}
+          onSaved={(name, created) => showToast(created ? `目标「${name}」已创建 · 省下的钱会自动存入它` : `「${name}」已更新`)}
         />
       )}
     </div>

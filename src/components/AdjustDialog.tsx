@@ -23,17 +23,14 @@ export function AdjustDialog() {
   const closeAdjust = useUI((s) => s.closeAdjust)
   const showToast = useUI((s) => s.showToast)
 
-  const goals = useLiveQuery(() => db.goals.where('status').equals('ACTIVE').toArray(), [])
   const recent = useLiveQuery(() => db.adjustments.orderBy('createdAt').reverse().limit(12).toArray(), [])
 
   const [type, setType] = useState<AdjType>(adjustType)
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
-  const [targetId, setTargetId] = useState('')
 
   const v = num(amount)
-  const activeGoals = goals ?? []
-  const valid = v !== 0 && reason.trim().length > 0 && (type !== 'FUND' || activeGoals.length > 0)
+  const valid = v !== 0 && reason.trim().length > 0
 
   async function save() {
     if (!valid) return
@@ -41,7 +38,7 @@ export function AdjustDialog() {
       id: crypto.randomUUID(),
       createdAt: Date.now(),
       type,
-      targetId: type === 'FUND' ? targetId || activeGoals[0]?.id || undefined : undefined,
+      targetId: undefined,
       amount: v,
       reason: reason.trim(),
     }
@@ -88,22 +85,9 @@ export function AdjustDialog() {
 
         {type === 'FUND' && (
           <div className="field">
-            <label>存入哪个目标？</label>
-            {activeGoals.length > 0 ? (
-              <select
-                className="input"
-                value={targetId || activeGoals[0]?.id || ''}
-                onChange={(e) => setTargetId(e.target.value)}
-              >
-                {activeGoals.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    「{g.name}」（{fmt(g.targetAmount)}）
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="form-hint">还没有进行中的目标，先去「我的目标」创建一个。</p>
-            )}
+            <p className="form-hint">
+              基金是「总池」：省下的钱自动按目标创建顺序填充——先填满第一个，达成后自动流入下一个。
+            </p>
           </div>
         )}
 

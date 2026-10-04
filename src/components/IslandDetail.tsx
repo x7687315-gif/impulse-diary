@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
-import { adjSum, fmt, fundInOf, startOfDay, statsOf, todaySpent } from '../db/stats'
+import { adjSum, fmt, allocateFund, fundPool, startOfDay, statsOf, todaySpent } from '../db/stats'
 import { useUI } from '../state/uiStore'
 import type { Adjustment, Entry } from '../types'
 import { ADJ_LABEL } from '../types'
@@ -114,49 +114,41 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
   } else if (index === 2) {
     title = '大件基金'
     const activeList = goals.filter((g) => g.status !== 'PAUSED')
-    const total = activeList.reduce((x, g) => x + fundInOf(entries, adjs, g.id), 0)
+    const pool = fundPool(entries, adjs)
     const tSum = activeList.reduce((x, g) => x + g.targetAmount, 0)
-    amount = tSum > 0 ? `${fmt(total)} / ${fmt(tSum)}` : fmt(total)
-    // 未分配：钱还挂着已删除目标的账上，不计入任何单个目标的进度
-    const orphan = fundInOf(entries, adjs) - total
-    const inflows = entries.filter((e) => e.fundAmount > 0).sort(byTime).slice(0, 6)
-    const adjsFund = adjs.filter((a) => a.type === 'FUND').sort((a, b) => b.createdAt - a.createdAt)
+    const stages = allocateFund(activeList, pool)
+    amount = tSum > 0 ? `${fmt(Math.min(pool, tSum))} / ${fmt(tSum)}` : fmt(pool)
     body = (
       <>
-        {orphan > 0.005 && (
-          <Row main="未分配（原目标已删除）" num={`+${fmt(orphan)}`} numClass="amb" sub="可用手动调整转出" />
-        )}
-        {goals.filter((g) => g.status !== 'PAUSED').map((g) => {
-          const cur = fundInOf(entries, adjs, g.id)
-          const pct = Math.min(100, Math.round((cur / g.targetAmount) * 100))
-          return (
-            <div key={g.id} style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
-                <span>{g.name}</span>
-                <span className="pos">{fmt(cur)} / {fmt(g.targetAmount)}</span>
-              </div>
-              <div className="prog"><i style={{ width: `${pct}%` }} /></div>
+        {stages.map((st, i) => (
+          <div key={st.goal.id} style={{ marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
+              <span>
+                第 {i + 1} 阶段 · {st.goal.name}
+                {st.filling && <span style={{ color: 'var(--save)' }}>（正在存）</span>}
+              </span>
+              <span className={st.reached ? 'pos' : ''}>
+                {fmt(st.allocated)} / {fmt(st.goal.targetAmount)}
+              </span>
             </div>
-          )
-        })}
-        {inflows.map((e) => {
-          const g = goals.find((x) => x.id === e.targetId)
-          return (
-            <Row
-              key={e.id}
-              main={short(e.content)}
-              num={`+${fmt(e.fundAmount)}`}
-              numClass="pos"
-              sub={g ? g.name : undefined}
-            />
-          )
-        })}
-        {adjsFund.map((a) => {
-          const r = adjRow(a)
-          return <Row key={a.id} main={r.main} num={r.num} numClass={a.amount >= 0 ? 'pos' : 'neg'} />
-        })}
-        {inflows.length === 0 && adjsFund.length === 0 && goals.length === 0 && (
-          <div className="loading" style={{ padding: '18px 0' }}>还没有目标和拨付记录</div>
+            <div className="prog">
+              <i
+                style={{
+                  width: `${Math.min(100, Math.round((st.allocated / st.goal.targetAmount) * 100))}%`,
+                }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 3 }}>
+              {st.reached
+                ? '已达成'
+                : st.filling
+                  ? `当前正在存 · 还差 ${fmt(st.goal.targetAmount - st.allocated)}`
+                  : '排队中 · 前面阶段达成后自动开始'}
+            </div>
+          </div>
+        ))}
+        {activeList.length === 0 && (
+          <div className="loading" style={{ padding: '18px 0' }}>还没有进行中的目标 —— 省下的钱会先攒着，创建目标后自动开始</div>
         )}
       </>
     )

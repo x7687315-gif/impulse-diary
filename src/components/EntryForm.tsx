@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import { useUI } from '../state/uiStore'
-import { deriveAmounts, fmt, fundBalance } from '../db/stats'
+import { allocateFund, deriveAmounts, fmt, fundPoolNow } from '../db/stats'
 import { loadPrefs } from '../db/prefs'
 import type { Decision, Entry, Motive, Zone } from '../types'
 import { DECISION_LABEL, MOTIVE_LABEL, ZONE_LABEL } from '../types'
@@ -44,7 +44,6 @@ function EntryForm({ entry }: { entry: Entry | null }) {
   )
   const [fundOn, setFundOn] = useState(entry ? entry.fundAmount > 0 : true)
   const [fund, setFund] = useState(entry && entry.fundAmount > 0 ? String(entry.fundAmount) : '')
-  const [targetId, setTargetId] = useState(entry?.targetId ?? '')
   const [tags, setTags] = useState(entry ? entry.tags.join(' ') : '')
   const [bufferH, setBufferH] = useState(loadPrefs().bufferHours)
 
@@ -70,11 +69,6 @@ function EntryForm({ entry }: { entry: Entry | null }) {
     (!isDeferred || true) &&
     derived.fund <= derived.saved
 
-  // 默认存入最新创建的目标：符合「完成一个阶段 → 开启下一阶段」的心智模型
-  const newestGoal = [...activeGoals].sort((a, b) => b.createdAt - a.createdAt)[0]
-
-  const chosenGoal = activeGoals.find((g) => g.id === (targetId || newestGoal?.id))
-
   async function save() {
     if (!valid) return
     const now = Date.now()
@@ -96,7 +90,6 @@ function EntryForm({ entry }: { entry: Entry | null }) {
           updatedAt: now,
         }
 
-    const tid = derived.fund > 0 ? targetId || newestGoal?.id || undefined : undefined
     const e2: Entry = {
       ...base,
       content: content.trim(),
@@ -107,7 +100,7 @@ function EntryForm({ entry }: { entry: Entry | null }) {
       zone,
       savedAmount: derived.saved,
       fundAmount: derived.fund,
-      targetId: tid,
+      targetId: undefined,
       tags: tags.split(/[,,\s]+/).map((t) => t.trim()).filter(Boolean),
       bufferUntil: isDeferred ? now + bufferH * 3600e3 : undefined,
       resolvedAt:
@@ -116,15 +109,21 @@ function EntryForm({ entry }: { entry: Entry | null }) {
           : entry?.resolvedAt,
       updatedAt: now,
     }
+    // 瀑布分配：先算存入前的池子，入库后看是否跨过某个目标的达成线
+    const poolBefore = (await fundPoolNow()) - derived.fund
     await db.entries.put(e2)
 
-    if (derived.fund > 0 && tid && chosenGoal) {
-      const prev = await fundBalance(tid)
-      const willReach = prev >= chosenGoal.targetAmount
-      if (!willReach && prev + derived.fund >= chosenGoal.targetAmount) {
-        showToast(`+${fmt(derived.fund)} 已存入「${chosenGoal.name}」· 目标达成！可以真正拥有它了`)
+    if (derived.fund > 0) {
+      const beforeCur = allocateFund(activeGoals, poolBefore).find((s) => !s.reached)
+      const afterCur = allocateFund(activeGoals, poolBefore + derived.fund).find((s) => !s.reached)
+      if (beforeCur && !afterCur) {
+        showToast(`🎉「${beforeCur.goal.name}」已达成！剩下的钱自动开始存入下一个目标`)
+      } else if (afterCur) {
+        showToast(
+          `+${fmt(derived.fund)} 自动存入「${afterCur.goal.name}」· 还差 ${fmt(afterCur.goal.targetAmount - afterCur.allocated)} 达成`,
+        )
       } else {
-        showToast(`+${fmt(derived.fund)} 已存入「${chosenGoal.name}」· 距离目标又近了 ${fmt(derived.fund)}`)
+        showToast(`+${fmt(derived.fund)} 已存入基金 · 所有目标都已达成`)
       }
     } else if (decision === 'BOUGHT') {
       showToast(`已记录 · −${fmt(derived.actual)} 实际支出`)
@@ -286,35 +285,24 @@ function EntryForm({ entry }: { entry: Entry | null }) {
                 {fundOn ? '✓ ' : ''}把这笔钱存入大件基金
               </button>
             </div>
-            {fundOn &&
-              (activeGoals.length > 0 ? (
-                <>
-                  <div className="amount-wrap" style={{ marginBottom: 10 }}>
-                    <span className="yen">¥</span>
-                    <input
-                      inputMode="decimal"
-                      value={fund}
-                      onChange={(e) => setFund(e.target.value.replace(/[^\d.]/g, ''))}
-                      placeholder={`默认全部（${fmt(derived.saved)}）`}
-                    />
-                  </div>
-                  <select
-                    className="input"
-                    value={targetId || newestGoal?.id || ''}
-                    onChange={(e) => setTargetId(e.target.value)}
-                  >
-                    {activeGoals.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        存入「{g.name}」（{fmt(g.targetAmount)}）
-                      </option>
-                    ))}
-                  </select>
-                </>
-              ) : (
+            {fundOn && (
+              <>
+                <div className="amount-wrap" style={{ marginBottom: 10 }}>
+                  <span className="yen">¥</span>
+                  <input
+                    inputMode="decimal"
+                    value={fund}
+                    onChange={(e) => setFund(e.target.value.replace(/[^\d.]/g, ''))}
+                    placeholder={`默认全部（${fmt(derived.saved)}）`}
+                  />
+                </div>
                 <p className="form-hint">
-                  还没有大件目标。先随便记着，「我的目标」页面建好之后，之后的节省就能自动存进去了。
+                  {activeGoals.length > 0
+                    ? '省下的钱会按目标创建顺序自动存入：先填满第一个，达成后自动流入下一个。'
+                    : '还没有目标 —— 先随便记着，「我的目标」页面建好之后，攒下的钱会自动开始存入。'}
                 </p>
-              ))}
+              </>
+            )}
           </div>
         )}
 
@@ -335,7 +323,7 @@ function EntryForm({ entry }: { entry: Entry | null }) {
           <div className="preview-line">
             <span>大件基金</span>
             <span className={derived.fund > 0 ? 'pos' : ''}>
-              {derived.fund > 0 ? `+${fmt(derived.fund)}${chosenGoal ? `「${chosenGoal.name}」` : ''}` : '—'}
+              {derived.fund > 0 ? `+${fmt(derived.fund)} · 自动存入当前阶段目标` : '—'}
             </span>
           </div>
           <p className="preview-note">

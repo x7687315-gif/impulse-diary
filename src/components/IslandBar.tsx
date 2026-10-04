@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import type { PointerEvent as RPointerEvent } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
-import { adjSum, fmt, fundInOf, statsOf, todaySpent } from '../db/stats'
+import { adjSum, fmt, fundPool, statsOf, todaySpent } from '../db/stats'
 import { useUI } from '../state/uiStore'
 import { Icon, type IconName } from './icons'
 import { IslandDetail } from './IslandDetail'
@@ -42,9 +42,7 @@ export function IslandBar() {
     const s = statsOf(entries)
     const saved = s.saved + adjSum(adjs, 'SAVED')
     const upcoming = s.planned + adjSum(adjs, 'PLANNED')
-    const fund = goals
-      .filter((g) => g.status === 'ACTIVE')
-      .reduce((x, g) => x + fundInOf(entries, adjs, g.id), 0)
+    const fund = fundPool(entries, adjs)
     const spentToday = todaySpent(entries, adjs)
     const tSum = goals.filter((g) => g.status === 'ACTIVE').reduce((x, g) => x + g.targetAmount, 0)
     return [

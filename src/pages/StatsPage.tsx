@@ -4,7 +4,7 @@ import { db } from '../db/db'
 import {
   addDays,
   adjSum,
-  fundInOf,
+  fundPool,
   fmt,
   inRange,
   startOfDay,
@@ -86,7 +86,7 @@ export function StatsPage() {
   const es = allEntries.filter((e) => inRange(e.createdAt, range))
   const as = allAdjs.filter((a) => inRange(a.createdAt, range))
   const st = statsOf(es)
-  const fundIn = fundInOf(es, as)
+  const fundIn = fundPool(es, as)
 
   const fd = (ts: number) => `${new Date(ts).getMonth() + 1}月${new Date(ts).getDate()}日`
   const rangeTitle =

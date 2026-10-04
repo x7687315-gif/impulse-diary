@@ -235,7 +235,7 @@ export function SettingsPage() {
       <div className="card-block">
         <p className="block-title">关于</p>
         <div className="about">
-          攒钱日记 · v0.3.1（手机版）
+          攒钱日记 · v0.4（手机版）
           <br />
           「不是记录我花了多少钱，而是记录我如何面对自己的消费欲望。」
           <br />
