@@ -113,13 +113,19 @@ export function IslandDetail({ index, onClose }: { index: number; onClose: () =>
     )
   } else if (index === 2) {
     title = '大件基金'
-    const total = fundInOf(entries, adjs)
-    const tSum = goals.filter((g) => g.status === 'ACTIVE').reduce((x, g) => x + g.targetAmount, 0)
+    const activeList = goals.filter((g) => g.status !== 'PAUSED')
+    const total = activeList.reduce((x, g) => x + fundInOf(entries, adjs, g.id), 0)
+    const tSum = activeList.reduce((x, g) => x + g.targetAmount, 0)
     amount = tSum > 0 ? `${fmt(total)} / ${fmt(tSum)}` : fmt(total)
+    // 未分配：钱还挂着已删除目标的账上，不计入任何单个目标的进度
+    const orphan = fundInOf(entries, adjs) - total
     const inflows = entries.filter((e) => e.fundAmount > 0).sort(byTime).slice(0, 6)
     const adjsFund = adjs.filter((a) => a.type === 'FUND').sort((a, b) => b.createdAt - a.createdAt)
     body = (
       <>
+        {orphan > 0.005 && (
+          <Row main="未分配（原目标已删除）" num={`+${fmt(orphan)}`} numClass="amb" sub="可用手动调整转出" />
+        )}
         {goals.filter((g) => g.status !== 'PAUSED').map((g) => {
           const cur = fundInOf(entries, adjs, g.id)
           const pct = Math.min(100, Math.round((cur / g.targetAmount) * 100))

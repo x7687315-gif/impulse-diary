@@ -51,9 +51,24 @@ export function GoalsPage() {
               <button
                 className="btn small danger"
                 onClick={async () => {
-                  if (!window.confirm(`删除目标「${g.name}」？已拨付的历史记录仍会保留在日记里，但不再计入这个目标。`)) return
-                  await db.goals.delete(g.id)
-                  showToast('目标已删除')
+                  const cur = fundInOf(entries, adjs, g.id)
+                  const others = goals.filter((x) => x.id !== g.id && x.status === 'ACTIVE')
+                  if (cur > 0 && others.length > 0) {
+                    const to = others[0]
+                    const ok = window.confirm(
+                      `删除目标「${g.name}」？其中已存的 ${fmt(cur)} 将转入「${to.name}」（确定=转存并删除）。`,
+                    )
+                    if (!ok) return
+                    await db.entries.where('targetId').equals(g.id).modify({ targetId: to.id })
+                    await db.adjustments.where('targetId').equals(g.id).modify({ targetId: to.id })
+                    await db.goals.delete(g.id)
+                    showToast(`目标已删除 · ${fmt(cur)} 已转入「${to.name}」`)
+                  } else {
+                    const tip = cur > 0 ? `其中已存的 ${fmt(cur)} 将变为未分配（不再计入任何单个目标）。` : ''
+                    if (!window.confirm(`删除目标「${g.name}」？${tip}`)) return
+                    await db.goals.delete(g.id)
+                    showToast(cur > 0 ? '目标已删除 · 已存金额变为未分配' : '目标已删除')
+                  }
                 }}
               >
                 删除

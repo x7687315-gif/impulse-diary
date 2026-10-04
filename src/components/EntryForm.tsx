@@ -70,7 +70,10 @@ function EntryForm({ entry }: { entry: Entry | null }) {
     (!isDeferred || true) &&
     derived.fund <= derived.saved
 
-  const chosenGoal = activeGoals.find((g) => g.id === (targetId || activeGoals[0]?.id))
+  // 默认存入最新创建的目标：符合「完成一个阶段 → 开启下一阶段」的心智模型
+  const newestGoal = [...activeGoals].sort((a, b) => b.createdAt - a.createdAt)[0]
+
+  const chosenGoal = activeGoals.find((g) => g.id === (targetId || newestGoal?.id))
 
   async function save() {
     if (!valid) return
@@ -93,7 +96,7 @@ function EntryForm({ entry }: { entry: Entry | null }) {
           updatedAt: now,
         }
 
-    const tid = derived.fund > 0 ? targetId || activeGoals[0]?.id || undefined : undefined
+    const tid = derived.fund > 0 ? targetId || newestGoal?.id || undefined : undefined
     const e2: Entry = {
       ...base,
       content: content.trim(),
@@ -297,7 +300,7 @@ function EntryForm({ entry }: { entry: Entry | null }) {
                   </div>
                   <select
                     className="input"
-                    value={targetId || activeGoals[0]?.id || ''}
+                    value={targetId || newestGoal?.id || ''}
                     onChange={(e) => setTargetId(e.target.value)}
                   >
                     {activeGoals.map((g) => (

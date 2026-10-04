@@ -42,7 +42,9 @@ export function IslandBar() {
     const s = statsOf(entries)
     const saved = s.saved + adjSum(adjs, 'SAVED')
     const upcoming = s.planned + adjSum(adjs, 'PLANNED')
-    const fund = fundInOf(entries, adjs)
+    const fund = goals
+      .filter((g) => g.status === 'ACTIVE')
+      .reduce((x, g) => x + fundInOf(entries, adjs, g.id), 0)
     const spentToday = todaySpent(entries, adjs)
     const tSum = goals.filter((g) => g.status === 'ACTIVE').reduce((x, g) => x + g.targetAmount, 0)
     return [
